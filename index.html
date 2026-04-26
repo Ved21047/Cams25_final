@@ -25,6 +25,7 @@
   --gold: #a37a2c;
   --panel: #f5ead2;
   --panel-edge: #b89a65;
+  --transition-speed: 0.2s;
 }
 * { box-sizing: border-box; }
 html, body {
@@ -35,6 +36,7 @@ html, body {
   font-size: 17px;
   line-height: 1.55;
 }
+
 /* parchment texture via layered gradients */
 body {
   background:
@@ -57,12 +59,19 @@ body {
   box-shadow: 0 0 0 2px var(--parchment), 0 30px 60px -20px rgba(0,0,0,.5);
   position: relative;
 }
+/* All four corner brackets */
 .plate::before, .plate::after {
   content: ""; position: absolute; pointer-events: none;
   width: 44px; height: 44px; border: 1px solid var(--ink-soft);
 }
 .plate::before { top: -2px; left: -2px; border-right: none; border-bottom: none; }
 .plate::after  { bottom: -2px; right: -2px; border-left: none; border-top: none; }
+.plate-corner-tr, .plate-corner-bl {
+  position: absolute; pointer-events: none;
+  width: 44px; height: 44px; border: 1px solid var(--ink-soft);
+}
+.plate-corner-tr { top: -2px; right: -2px; border-left: none; border-bottom: none; }
+.plate-corner-bl { bottom: -2px; left: -2px; border-right: none; border-top: none; }
 
 /* --- typography ------------------------------------------------------ */
 .eyebrow {
@@ -130,8 +139,7 @@ h1 em { font-style: italic; color: var(--red-ink); }
   margin: 26px 0 8px;
   padding: 18px 22px;
   border-left: 3px solid var(--red-ink);
-  background:
-    linear-gradient(90deg, rgba(155,47,34,.06), transparent);
+  background: linear-gradient(90deg, rgba(155,47,34,.06), transparent);
   font-family: 'Cormorant Garamond', serif;
   font-size: 19px; font-style: italic;
   color: var(--ink);
@@ -173,7 +181,7 @@ h1 em { font-style: italic; color: var(--red-ink); }
   color: var(--ink-soft);
   padding: 7px 14px; cursor: pointer;
   border-right: 1px solid var(--ink-soft);
-  transition: background .15s, color .15s;
+  transition: background var(--transition-speed), color var(--transition-speed);
 }
 .seg button:last-child { border-right: 0; }
 .seg button[aria-pressed="true"] {
@@ -182,6 +190,13 @@ h1 em { font-style: italic; color: var(--red-ink); }
 .seg button:hover:not([aria-pressed="true"]) {
   background: rgba(43,26,11,.08);
 }
+.seg button:focus-visible {
+  outline: 2px solid var(--red-ink);
+  outline-offset: -2px;
+  z-index: 1;
+}
+
+/* toggle switch */
 .toggle {
   display: inline-flex; align-items: center; gap: 8px;
   cursor: pointer; user-select: none;
@@ -191,14 +206,19 @@ h1 em { font-style: italic; color: var(--red-ink); }
 .toggle .sw {
   width: 34px; height: 18px; border: 1px solid var(--ink-soft);
   background: var(--parchment); position: relative; border-radius: 2px;
+  transition: background var(--transition-speed);
 }
 .toggle .sw::after {
   content: ""; position: absolute; top: 1px; left: 1px;
   width: 14px; height: 14px; background: var(--ink-soft);
-  transition: left .2s, background .2s;
+  transition: left var(--transition-speed), background var(--transition-speed);
 }
 .toggle input:checked + .sw::after {
   left: 17px; background: var(--red-ink);
+}
+.toggle:focus-within .sw {
+  outline: 2px solid var(--red-ink);
+  outline-offset: 2px;
 }
 
 /* slider */
@@ -214,10 +234,18 @@ h1 em { font-style: italic; color: var(--red-ink); }
   appearance: none; width: 14px; height: 14px;
   background: var(--red-ink); border: 1px solid var(--ink);
   border-radius: 50%; cursor: pointer;
+  transition: transform 0.15s;
+}
+.slider-wrap input[type=range]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
 }
 .slider-wrap input[type=range]::-moz-range-thumb {
   width: 14px; height: 14px; background: var(--red-ink);
   border: 1px solid var(--ink); border-radius: 50%; cursor: pointer;
+}
+.slider-wrap input[type=range]:focus-visible {
+  outline: 2px solid var(--red-ink);
+  outline-offset: 4px;
 }
 .slider-val {
   font-family: 'IM Fell English', serif;
@@ -230,9 +258,23 @@ h1 em { font-style: italic; color: var(--red-ink); }
   display: grid;
   grid-template-columns: 1fr 340px;
   gap: 22px;
+  align-items: start; /* map column never stretches to match panel height */
 }
-@media (max-width: 960px) {
+@media (max-width: 1024px) {
   .map-stage { grid-template-columns: 1fr; }
+}
+/* On mobile: give the panel a scrollable max-height so very long
+   event text doesn't push the page down excessively */
+@media (max-width: 600px) {
+  .panel {
+    min-height: unset;
+    max-height: 60vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .plate { padding: 22px 18px 32px; }
+  .controls { gap: 12px 16px; }
+  .slider-wrap { min-width: 0; width: 100%; }
 }
 
 .map-frame {
@@ -244,7 +286,7 @@ h1 em { font-style: italic; color: var(--red-ink); }
 }
 .map-frame svg { display: block; width: 100%; height: auto; }
 
-/* --- Three-tile reference layout ----------------------------------- */
+/* --- Reference tile layout ----------------------------------------- */
 .tile-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -268,6 +310,7 @@ h1 em { font-style: italic; color: var(--red-ink); }
   padding: 10px 14px 9px;
   background: rgba(43,26,11,.08);
   border-bottom: 1px solid rgba(43,26,11,.2);
+  flex-wrap: wrap;
 }
 .map-tile-header h3 {
   margin: 0;
@@ -289,6 +332,7 @@ h1 em { font-style: italic; color: var(--red-ink); }
   padding: 12px;
   background: var(--sand);
   flex: 1;
+  position: relative;
 }
 .map-tile-body img {
   max-width: 100%;
@@ -296,6 +340,7 @@ h1 em { font-style: italic; color: var(--red-ink); }
   height: auto;
   display: block;
   filter: sepia(.12) contrast(1.02);
+  transition: opacity 0.4s ease;
 }
 .map-tile-body svg {
   display: block; width: 100%; height: auto;
@@ -316,7 +361,56 @@ h1 em { font-style: italic; color: var(--red-ink); }
 }
 .tile-caption a:hover { color: var(--ink); border-bottom-color: var(--ink); }
 
-/* side panel (info on clicked marker) */
+/* --- Tile II view-toggle (Satellite / Ancient Map) ----------------- */
+.tile-view-seg {
+  display: inline-flex;
+  border: 1px solid var(--ink-soft);
+  background: var(--parchment);
+  margin-left: auto;
+  align-self: center;
+  flex-shrink: 0;
+}
+.tile-view-seg button {
+  appearance: none; border: 0; background: transparent;
+  font-family: 'IM Fell English SC', serif;
+  font-size: 10px; letter-spacing: .18em;
+  color: var(--ink-soft);
+  padding: 5px 10px; cursor: pointer;
+  border-right: 1px solid var(--ink-soft);
+  transition: background var(--transition-speed), color var(--transition-speed);
+  white-space: nowrap;
+}
+.tile-view-seg button:last-child { border-right: 0; }
+.tile-view-seg button[aria-pressed="true"] {
+  background: var(--ink); color: var(--parchment);
+}
+.tile-view-seg button:hover:not([aria-pressed="true"]) {
+  background: rgba(43,26,11,.08);
+}
+.tile-view-seg button:focus-visible {
+  outline: 2px solid var(--red-ink);
+  outline-offset: -2px;
+  z-index: 1;
+}
+/* fade animation between tile II views */
+.tile-img-wrap {
+  position: relative;
+  width: 100%; display: flex; align-items: center; justify-content: center;
+}
+.tile-img-wrap img {
+  max-width: 100%; max-height: 520px; height: auto; display: block;
+  transition: opacity 0.45s ease;
+  position: absolute; top: 0; left: 0; right: 0; margin: auto;
+}
+.tile-img-wrap img.tile-img-active {
+  position: relative;
+  opacity: 1; pointer-events: auto;
+}
+.tile-img-wrap img.tile-img-hidden {
+  opacity: 0; pointer-events: none;
+}
+
+/* --- side panel (info on clicked marker) --------------------------- */
 .panel {
   border: 1px solid var(--ink-soft);
   background:
@@ -394,6 +488,12 @@ h1 em { font-style: italic; color: var(--red-ink); }
   padding: 60px 10px; font-size: 17px;
 }
 
+/* panel body fade on update */
+#panelBody {
+  transition: opacity 0.2s ease;
+}
+#panelBody.fading { opacity: 0; }
+
 /* --- dashboard ------------------------------------------------------ */
 .dash {
   margin-top: 26px;
@@ -408,6 +508,10 @@ h1 em { font-style: italic; color: var(--red-ink); }
   background: var(--panel);
   padding: 16px 18px;
   position: relative;
+  transition: box-shadow 0.2s;
+}
+.dash-cell:hover {
+  box-shadow: 0 2px 12px rgba(43,26,11,.12);
 }
 .dash-cell .k {
   font-family: 'IM Fell English SC', serif;
@@ -430,11 +534,12 @@ h1 em { font-style: italic; color: var(--red-ink); }
 /* SVG marker button */
 .mk-hit { cursor: pointer; pointer-events: all; }
 .mk-hit:focus { outline: none; }
-/* Make the invisible ring still capture pointer events so clicks anywhere
-   in its 12px radius register, not just on the small visible dot. */
-.mk-ring { pointer-events: all; }
+.mk-ring { pointer-events: all; transition: opacity 0.15s; }
 .mk-hit:hover .mk-ring, .mk-hit.active .mk-ring { opacity: 1; }
+.mk-dot { transition: fill 0.15s, r 0.15s; }
+.mk-hit:hover .mk-dot { r: 7; }
 .mk-hit.active .mk-dot { fill: var(--parchment); }
+.mk-hit:focus-visible .mk-ring { opacity: 1; stroke: var(--gold); stroke-width: 2; }
 .mk-label {
   font-family: 'IM Fell English', serif;
   font-size: 13px; fill: var(--ink); pointer-events: none;
@@ -489,10 +594,38 @@ h1 em { font-style: italic; color: var(--red-ink); }
   color: var(--ink-soft);
 }
 .intro p { margin: 0 0 8px; }
+
+/* --- Accessibility: reduced motion --------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+/* --- Print styles -------------------------------------------------- */
+@media print {
+  body { background: white; }
+  .plate {
+    margin: 0; padding: 20px;
+    box-shadow: none; border: 1px solid #ccc;
+    outline: none;
+  }
+  .controls { display: none; }
+  .panel { border: 1px solid #ccc; min-height: auto; }
+  .map-frame { box-shadow: none; }
+  .tile-view-seg { display: none; }
+  .tile-img-wrap img.tile-img-hidden { display: none; }
+  .tile-img-wrap img.tile-img-active { position: relative; opacity: 1; }
+  .footnote { page-break-before: always; }
+}
 </style>
 </head>
 <body>
 <main class="plate">
+  <!-- All four corner brackets -->
+  <span class="plate-corner-tr" aria-hidden="true"></span>
+  <span class="plate-corner-bl" aria-hidden="true"></span>
 
   <div class="eyebrow">Creative Project · Ancient History</div>
   <h1>The Gedrosian March, <em>325&nbsp;BCE</em></h1>
@@ -503,10 +636,10 @@ h1 em { font-style: italic; color: var(--red-ink); }
   </div>
 
   <!-- CONTROLS -->
-  <div class="controls">
+  <div class="controls" role="toolbar" aria-label="Map controls">
     <div class="ctrl-group">
-      <span class="ctrl-label">Route</span>
-      <div class="seg" role="group" id="routeSeg">
+      <span class="ctrl-label" id="routeLabel">Route</span>
+      <div class="seg" role="group" id="routeSeg" aria-labelledby="routeLabel">
         <button data-route="planned"  aria-pressed="false">Planned</button>
         <button data-route="actual"   aria-pressed="false">Actual</button>
         <button data-route="both"     aria-pressed="true">Both</button>
@@ -514,19 +647,23 @@ h1 em { font-style: italic; color: var(--red-ink); }
     </div>
     <div class="ctrl-group">
       <label class="toggle">
-        <input type="checkbox" id="supplyToggle" checked>
-        <span class="sw"></span>
+        <input type="checkbox" id="supplyToggle" checked aria-label="Show supply zone">
+        <span class="sw" aria-hidden="true"></span>
         <span class="ctrl-label" style="letter-spacing:.2em">Supply Zone</span>
       </label>
     </div>
     <div class="ctrl-group slider-wrap">
-      <span class="ctrl-label">Army Size</span>
-      <input type="range" id="armySize" min="30000" max="120000" step="5000" value="85000">
-      <span class="slider-val" id="armySizeVal">85,000</span>
+      <span class="ctrl-label" id="armyLabel">Army Size</span>
+      <input type="range" id="armySize"
+             min="30000" max="120000" step="5000" value="85000"
+             aria-labelledby="armyLabel"
+             aria-valuemin="30000" aria-valuemax="120000" aria-valuenow="85000"
+             aria-valuetext="85,000 soldiers">
+      <span class="slider-val" id="armySizeVal" aria-live="polite">85,000</span>
     </div>
     <div class="ctrl-group">
-      <span class="ctrl-label">Backdrop</span>
-      <div class="seg" role="group" id="backdropSeg">
+      <span class="ctrl-label" id="backdropLabel">Backdrop</span>
+      <div class="seg" role="group" id="backdropSeg" aria-labelledby="backdropLabel">
         <button data-bg="none"     aria-pressed="true">None</button>
         <button data-bg="resource" aria-pressed="false">Resource</button>
       </div>
@@ -534,7 +671,7 @@ h1 em { font-style: italic; color: var(--red-ink); }
   </div>
 
   <!-- REFERENCE MAPS ===================================================== -->
-  <div class="rule"><span>Two Views of the Same Country</span></div>
+  <div class="rule"><span>Reference Maps</span></div>
 
   <div class="tile-grid">
 
@@ -575,46 +712,78 @@ h1 em { font-style: italic; color: var(--red-ink); }
 
   </div>
 
-  <!-- Tile II: Satellite view, full-width -->
-  <div class="rule" style="margin-top:28px"><span>II. The Terrain Today</span></div>
+  <!-- Tile II: Satellite view / Ancient Map toggle, full-width -->
+  <div class="rule" style="margin-top:28px"><span>II. The Terrain &mdash; Two Views</span></div>
   <div class="map-tile" style="margin-bottom:22px">
     <div class="map-tile-header">
-      <h3>II. Makran Coast &mdash; Satellite View</h3>
-      <span class="tag">Pakistani Balochistan &middot; Ormara&ndash;Gwadar corridor</span>
+      <h3>II. Makran Coast &mdash; <span id="tile2Title">Satellite View</span></h3>
+      <span class="tag" id="tile2Tag">Pakistani Balochistan &middot; Ormara&ndash;Gwadar corridor</span>
+      <!-- View toggle -->
+      <div class="tile-view-seg" role="group" aria-label="Map view">
+        <button data-tileview="satellite" aria-pressed="true">Satellite</button>
+        <button data-tileview="ancient"   aria-pressed="false">Ancient Map</button>
+      </div>
     </div>
     <div class="map-tile-body" style="min-height:320px">
       <!-- ============================================================
-           DROP YOUR GOOGLE EARTH SCREENSHOT HERE
-           Save a screenshot of the Makran coast (roughly from the Indus
-           delta west to Jask / Bampur, with the coast range visible)
-           as `makran-satellite.jpg` in the SAME FOLDER as this HTML.
-           Recommended: landscape orientation, wide enough to show the
-           coastal strip AND the mountain range behind it.
-           If you name it differently, change the `src` below.
+           DROP YOUR FILES HERE
+           · Satellite view: save as `makran-satellite.png` (or .jpg)
+           · Ancient map:    save as `makran-ancient.jpg` in the SAME folder.
+             Both images should be landscape, wide enough to show the
+             coastal strip AND the mountain range behind it.
            ============================================================ -->
-      <img id="terrainImg"
-           src="./makran-satellite.png"
-           alt="Satellite view of the Makran coast, Balochistan — the terrain Alexander's army was meant to shadow"
-           loading="lazy"
-           style="max-width:100%;max-height:520px;height:auto;display:block;filter:contrast(1.03) saturate(0.95);"
-           onerror="this.style.display='none'; document.getElementById('terrainSVG').style.display='block';">
-      <!-- Fallback: shown only if makran-satellite.jpg is missing -->
-      <svg id="terrainSVG" style="display:none" viewBox="0 0 1400 480" xmlns="http://www.w3.org/2000/svg" aria-label="Placeholder — add makran-satellite.jpg to this folder">
-        <rect x="0" y="0" width="1400" height="480" fill="#e4d5b6"/>
-        <g font-family="'IM Fell English', Georgia, serif" fill="#4a3322" text-anchor="middle">
-          <text x="700" y="220" font-size="22">Satellite image not found</text>
-          <text x="700" y="260" font-size="16" font-style="italic" fill="#7a5c3d">
-            Add <tspan fill="#9b2f22">makran-satellite.jpg</tspan> to this folder to display it here.
-          </text>
-        </g>
-      </svg>
+      <div class="tile-img-wrap" id="tile2Wrap" style="min-height:320px">
+
+        <!-- Satellite image -->
+        <img id="satelliteImg"
+             src="./makran-satellite.png"
+             alt="Satellite view of the Makran coast, Balochistan — the terrain Alexander's army was meant to shadow"
+             loading="lazy"
+             class="tile-img-active"
+             style="filter:contrast(1.03) saturate(0.95);"
+             onerror="this.style.display='none'; document.getElementById('terrainSVG').style.display='block';">
+
+        <!-- Ancient map image — place your file as makran-ancient.jpg -->
+        <img id="ancientImg"
+             src="./Gedorsia.png"
+             alt="Historical map of the Makran / Gedrosia region"
+             loading="lazy"
+             class="tile-img-hidden"
+             style="filter:sepia(.2) contrast(1.04);"
+             onerror="this.style.display='none'; document.getElementById('ancientSVG').style.display='block';">
+
+        <!-- Fallback SVG: shown if satellite image is missing -->
+        <svg id="terrainSVG" style="display:none;position:relative;" viewBox="0 0 1400 480" xmlns="http://www.w3.org/2000/svg" aria-label="Placeholder — add makran-satellite.png to this folder">
+          <rect x="0" y="0" width="1400" height="480" fill="#e4d5b6"/>
+          <g font-family="'IM Fell English', Georgia, serif" fill="#4a3322" text-anchor="middle">
+            <text x="700" y="200" font-size="22">Satellite image not found</text>
+            <text x="700" y="240" font-size="16" font-style="italic" fill="#7a5c3d">
+              Add <tspan fill="#9b2f22">makran-satellite.png</tspan> to this folder to display it here.
+            </text>
+          </g>
+        </svg>
+
+        <!-- Fallback SVG: shown if ancient map image is missing -->
+        <svg id="ancientSVG" style="display:none;position:relative;" viewBox="0 0 1400 480" xmlns="http://www.w3.org/2000/svg" aria-label="Placeholder — add makran-ancient.jpg to this folder">
+          <rect x="0" y="0" width="1400" height="480" fill="#efe4cd"/>
+          <rect x="30" y="30" width="1340" height="420" fill="none" stroke="#8b6a47" stroke-width="1.4" stroke-dasharray="8 5"/>
+          <g font-family="'IM Fell English', Georgia, serif" fill="#4a3322" text-anchor="middle">
+            <text x="700" y="200" font-size="22">Ancient map not found</text>
+            <text x="700" y="240" font-size="16" font-style="italic" fill="#7a5c3d">
+              Add <tspan fill="#9b2f22">makran-ancient.jpg</tspan> to this folder to display it here.
+            </text>
+          </g>
+        </svg>
+
+      </div>
     </div>
-    <div class="tile-caption">
-      Satellite view of the modern Makran coast. The narrow strip between the coast range and the Arabian Sea is the entire supply corridor &mdash; once the column left it, the fleet could no longer reach them.
+    <div class="tile-caption" id="tile2Caption">
+      Satellite view of the modern Makran coast. The narrow strip between the coast range and the Arabian Sea is the entire supply corridor &mdash; once the column left it, the fleet could no longer reach them. Toggle to <em>Ancient Map</em> for a historical cartographic view of the same region.
     </div>
   </div>
 
-  <div class="rule" style="margin-top: 32px"><span>IV. Interactive &mdash; the Expedition</span></div>
+  <!-- III. Interactive expedition ======================================== -->
+  <div class="rule" style="margin-top: 32px"><span>III. Interactive &mdash; the Expedition</span></div>
 
   <!-- MAP + PANEL =========================================================
        (existing interactive map follows — now with optional backdrop layers
@@ -624,7 +793,9 @@ h1 em { font-style: italic; color: var(--red-ink); }
     <div class="map-frame">
       <!-- Stylized map of the Makran / Gedrosia region. Not GIS-accurate;
            scaled for narrative clarity. -->
-      <svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg" aria-label="Map of the Gedrosian March from Patala to Carmania">
+      <svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg"
+           role="img"
+           aria-label="Map of the Gedrosian March from Patala to Carmania. Seven numbered markers correspond to key events; click each to read the ancient testimony.">
         <!-- Coordinate system: longitude 55°E–68.5°E maps to x=20–980; latitude 24°N–31°N maps to y=560–30.
              All markers and coastline follow real lat/lon; stylized for legibility, not GIS-accurate. -->
         <defs>
@@ -651,10 +822,7 @@ h1 em { font-style: italic; color: var(--red-ink); }
         <!-- Base: interior desert -->
         <rect x="0" y="0" width="1000" height="600" fill="url(#sand)"/>
 
-        <!-- ARABIAN SEA / GULF OF OMAN
-             Traced from real Makran geography: Indus delta (east), Sonmiani Bay,
-             Ormara and Gwadar hammerhead peninsulas, Chabahar Bay, and the coast
-             bending sharply northwest at the Strait of Hormuz (west). -->
+        <!-- ARABIAN SEA / GULF OF OMAN -->
         <path d="M 1000 492
                  L 935 525
                  L 925 545 L 895 545 L 870 520
@@ -716,8 +884,7 @@ h1 em { font-style: italic; color: var(--red-ink); }
           </g>
         </g>
 
-        <!-- SUPPLY ZONE: narrow coastal strip reachable by Nearchus's fleet
-             (~30-50 km inland from the actual Makran coast). -->
+        <!-- SUPPLY ZONE: narrow coastal strip reachable by Nearchus's fleet -->
         <g id="supplyZone">
           <path d="M 1000 460
                    L 935 495
@@ -768,8 +935,7 @@ h1 em { font-style: italic; color: var(--red-ink); }
           </text>
         </g>
 
-        <!-- MAKRAN COAST RANGE: runs parallel to coast, between supply zone and
-             the deep interior desert where the column was driven. -->
+        <!-- MAKRAN COAST RANGE -->
         <g opacity=".85">
           <path d="M 165 270
                    L 195 248 L 225 262 L 260 244 L 295 258
@@ -783,9 +949,7 @@ h1 em { font-style: italic; color: var(--red-ink); }
           </text>
         </g>
 
-        <!-- DRY WADIS: seasonal drainage channels that flash-flood in rains.
-             These run south from the Makran Range to the sea — one such wadi
-             drowned Alexander's camp at night. -->
+        <!-- DRY WADIS -->
         <g stroke="#a37a2c" stroke-width="0.6" fill="none" opacity=".55">
           <path d="M 720 275 Q 710 350 700 420 Q 695 455 692 475"/>
           <path d="M 580 295 Q 570 360 565 420 Q 562 450 560 472"/>
@@ -804,7 +968,7 @@ h1 em { font-style: italic; color: var(--red-ink); }
           <text x="20" y="178" font-size="10" fill="#3d5a6c" opacity=".7" font-style="italic">(Strait of Hormuz)</text>
         </g>
 
-        <!-- PLANNED coastal route (dashed blue): hug coast west, then turn N to Carmania -->
+        <!-- PLANNED coastal route (dashed blue) -->
         <g id="plannedRoute">
           <path d="M 936 503
                    C 900 505, 870 500, 850 498
@@ -820,7 +984,7 @@ h1 em { font-style: italic; color: var(--red-ink); }
                 stroke-dasharray="7 5" stroke-linecap="round"/>
         </g>
 
-        <!-- ACTUAL inland route (solid red): coast fails W of Oreitae, column pushed N -->
+        <!-- ACTUAL inland route (solid red) -->
         <g id="actualRoute">
           <path d="M 936 503
                    C 895 485, 865 445, 823 391
@@ -835,65 +999,61 @@ h1 em { font-style: italic; color: var(--red-ink); }
           <path d="M 204 244 L 196 246 L 200 233 Z" fill="#9b2f22"/>
         </g>
 
-        <!-- MARKERS: 7 stops, east→west, positions from real lat/lon.
-             1 Patala (24.75°N, 67.9°E)   2 Oreitae/Las Bela (26.2, 66.3)
-             3 Inland turn (west of Ras Malan)   4 Flash flood (central Makran wadi)
-             5 Thirst (central Makran interior)   6 Pura/Bampur (27.2, 60.4)
-             7 Carmania reunion (~27.7, 57.6, near Gulashkird) -->
+        <!-- MARKERS: 7 stops, east→west -->
         <g id="markers">
 
           <!-- 1. Patala (Indus delta) -->
-          <g class="mk-hit" data-id="patala" tabindex="0">
+          <g class="mk-hit" data-id="patala" tabindex="0" role="button" aria-label="1. Patala — click for details">
             <circle class="mk-ring" cx="936" cy="503" r="12" fill="transparent" stroke="#9b2f22" stroke-width="1.2" opacity="0"/>
             <circle class="mk-dot"  cx="936" cy="503" r="6" fill="#9b2f22" stroke="#2b1a0b" stroke-width="1"/>
             <text class="mk-label" x="936" y="491" text-anchor="middle">1. Patala</text>
           </g>
 
           <!-- 2. Oreitae / Rhambacia -->
-          <g class="mk-hit" data-id="oreitae" tabindex="0">
+          <g class="mk-hit" data-id="oreitae" tabindex="0" role="button" aria-label="2. Oreitae — click for details">
             <circle class="mk-ring" cx="823" cy="391" r="12" fill="transparent" stroke="#9b2f22" stroke-width="1.2" opacity="0"/>
             <circle class="mk-dot"  cx="823" cy="391" r="6" fill="#9b2f22" stroke="#2b1a0b" stroke-width="1"/>
             <text class="mk-label" x="823" y="379" text-anchor="middle">2. Oreitae</text>
           </g>
 
           <!-- 3. Inland turn (west of Ormara where coast route failed) -->
-          <g class="mk-hit" data-id="inland" tabindex="0">
+          <g class="mk-hit" data-id="inland" tabindex="0" role="button" aria-label="3. Inland Turn — click for details">
             <circle class="mk-ring" cx="730" cy="425" r="12" fill="transparent" stroke="#9b2f22" stroke-width="1.2" opacity="0"/>
             <circle class="mk-dot"  cx="730" cy="425" r="6" fill="#9b2f22" stroke="#2b1a0b" stroke-width="1"/>
             <text class="mk-label" x="730" y="413" text-anchor="middle">3. Inland Turn</text>
           </g>
 
           <!-- 4. Flash flood (night flood in a dry wadi) -->
-          <g class="mk-hit" data-id="flood" tabindex="0">
+          <g class="mk-hit" data-id="flood" tabindex="0" role="button" aria-label="4. Flash Flood — click for details">
             <circle class="mk-ring" cx="610" cy="385" r="12" fill="transparent" stroke="#9b2f22" stroke-width="1.2" opacity="0"/>
             <circle class="mk-dot"  cx="610" cy="385" r="6" fill="#9b2f22" stroke="#2b1a0b" stroke-width="1"/>
             <text class="mk-label" x="610" y="373" text-anchor="middle">4. Flash Flood</text>
           </g>
 
           <!-- 5. The Thirst (deep-interior water crisis) -->
-          <g class="mk-hit" data-id="thirst" tabindex="0">
+          <g class="mk-hit" data-id="thirst" tabindex="0" role="button" aria-label="5. The Thirst — click for details">
             <circle class="mk-ring" cx="510" cy="358" r="12" fill="transparent" stroke="#9b2f22" stroke-width="1.2" opacity="0"/>
             <circle class="mk-dot"  cx="510" cy="358" r="6" fill="#9b2f22" stroke="#2b1a0b" stroke-width="1"/>
             <text class="mk-label" x="510" y="346" text-anchor="middle">5. The Thirst</text>
           </g>
 
           <!-- 6. Pura (modern Bampur) -->
-          <g class="mk-hit" data-id="pura" tabindex="0">
+          <g class="mk-hit" data-id="pura" tabindex="0" role="button" aria-label="6. Pura — click for details">
             <circle class="mk-ring" cx="403" cy="318" r="12" fill="transparent" stroke="#9b2f22" stroke-width="1.2" opacity="0"/>
             <circle class="mk-dot"  cx="403" cy="318" r="6" fill="#9b2f22" stroke="#2b1a0b" stroke-width="1"/>
             <text class="mk-label" x="403" y="306" text-anchor="middle">6. Pura</text>
           </g>
 
-          <!-- 7. Carmania (reunion with Nearchus, inland NW of Pura) -->
-          <g class="mk-hit" data-id="carmania" tabindex="0">
+          <!-- 7. Carmania (reunion with Nearchus) -->
+          <g class="mk-hit" data-id="carmania" tabindex="0" role="button" aria-label="7. Carmania — click for details">
             <circle class="mk-ring" cx="200" cy="240" r="12" fill="transparent" stroke="#9b2f22" stroke-width="1.2" opacity="0"/>
             <circle class="mk-dot"  cx="200" cy="240" r="6" fill="#9b2f22" stroke="#2b1a0b" stroke-width="1"/>
             <text class="mk-label" x="200" y="228" text-anchor="middle">7. Carmania</text>
           </g>
         </g>
 
-        <!-- Compass rose (upper-right; empty space above INDIA label) -->
-        <g transform="translate(940,55)" opacity=".75">
+        <!-- Compass rose (upper-right) -->
+        <g transform="translate(940,55)" opacity=".75" aria-hidden="true">
           <circle r="22" fill="none" stroke="#4a3322" stroke-width="0.8"/>
           <circle r="16" fill="none" stroke="#4a3322" stroke-width="0.4"/>
           <path d="M 0 -22 L 4 0 L 0 22 L -4 0 Z" fill="#2b1a0b"/>
@@ -905,7 +1065,7 @@ h1 em { font-style: italic; color: var(--red-ink); }
         </g>
 
         <!-- Scale bar: ~1 SVG unit ≈ 1.4 km at map center (27°N), so 300 km ≈ 213 px -->
-        <g transform="translate(760,578)">
+        <g transform="translate(760,578)" aria-hidden="true">
           <line x1="0" y1="0" x2="213" y2="0" stroke="#2b1a0b" stroke-width="1"/>
           <line x1="0" y1="-4" x2="0" y2="4" stroke="#2b1a0b"/>
           <line x1="106" y1="-3" x2="106" y2="3" stroke="#2b1a0b"/>
@@ -919,9 +1079,11 @@ h1 em { font-style: italic; color: var(--red-ink); }
     </div>
 
     <!-- Side info panel -->
-    <aside class="panel" id="infoPanel" aria-live="polite">
-      <span class="corner tl"></span><span class="corner tr"></span>
-      <span class="corner bl"></span><span class="corner br"></span>
+    <aside class="panel" id="infoPanel" aria-live="polite" aria-label="Event detail">
+      <span class="corner tl" aria-hidden="true"></span>
+      <span class="corner tr" aria-hidden="true"></span>
+      <span class="corner bl" aria-hidden="true"></span>
+      <span class="corner br" aria-hidden="true"></span>
       <div class="panel-head">Event Detail</div>
       <div id="panelBody">
         <div class="hint">Select a numbered marker on the map to read the ancient testimony and logistical consequences of that stage of the march.</div>
@@ -930,40 +1092,40 @@ h1 em { font-style: italic; color: var(--red-ink); }
   </div>
 
   <!-- Legend -->
-  <div class="legend">
-    <div class="legend-item"><span class="legend-swatch planned"></span><span>Planned coastal route (from Arrian&rsquo;s account)</span></div>
-    <div class="legend-item"><span class="legend-swatch actual"></span><span>Actual inland route (reconstructed)</span></div>
-    <div class="legend-item"><span class="legend-swatch supply"></span><span>Coastal supply zone (Nearchus&rsquo;s reach)</span></div>
+  <div class="legend" role="list" aria-label="Map legend">
+    <div class="legend-item" role="listitem"><span class="legend-swatch planned" aria-hidden="true"></span><span>Planned coastal route (from Arrian&rsquo;s account)</span></div>
+    <div class="legend-item" role="listitem"><span class="legend-swatch actual" aria-hidden="true"></span><span>Actual inland route (reconstructed)</span></div>
+    <div class="legend-item" role="listitem"><span class="legend-swatch supply" aria-hidden="true"></span><span>Coastal supply zone (Nearchus&rsquo;s reach)</span></div>
   </div>
 
   <!-- Logistics dashboard -->
   <div class="rule" style="margin-top: 30px"><span>Daily Logistical Load</span></div>
 
-  <div class="dash">
+  <div class="dash" role="region" aria-label="Logistical dashboard — updates with army size slider">
     <div class="dash-cell">
       <div class="k">Water Needed</div>
-      <div><span class="v" id="waterVal">765,000</span><span class="u">L / day</span></div>
+      <div><span class="v" id="waterVal" aria-live="polite">765,000</span><span class="u">L / day</span></div>
       <div class="ctx">≈ 9 L per person in desert heat</div>
     </div>
     <div class="dash-cell">
       <div class="k">Grain Needed</div>
-      <div><span class="v" id="grainVal">119,000</span><span class="u">kg / day</span></div>
+      <div><span class="v" id="grainVal" aria-live="polite">119,000</span><span class="u">kg / day</span></div>
       <div class="ctx">≈ 1.4 kg per person per day</div>
     </div>
     <div class="dash-cell">
       <div class="k">Pack Animals</div>
-      <div><span class="v" id="animalVal">~12,750</span></div>
+      <div><span class="v" id="animalVal" aria-live="polite">~12,750</span></div>
       <div class="ctx">1 donkey per 6–7 people (Engels 1978)</div>
     </div>
     <div class="dash-cell">
       <div class="k">Days Inland Possible</div>
-      <div><span class="v" id="daysVal">~5</span><span class="u">days</span></div>
+      <div><span class="v" id="daysVal" aria-live="polite">~5</span><span class="u">days</span></div>
       <div class="ctx">before pack animals eat more than they carry</div>
     </div>
   </div>
 
   <p class="footnote">
-    Routes and supply zone are stylized for legibility, not drawn to GIS scale. The logistical figures in the dashboard update with the army-size slider above.
+    Routes and supply zone are stylized for legibility, not drawn to GIS scale. The logistical figures in the dashboard update with the army-size slider above. Figures follow Engels (1978): water at 9 L/person/day in desert conditions; grain at 1.4 kg/person/day; pack-animal ratio ~1:6.5; pack-animal payload ceiling approximately 5 days before self-consumption exceeds transport.
   </p>
 
   <div class="ancient-sources">
@@ -979,9 +1141,7 @@ h1 em { font-style: italic; color: var(--red-ink); }
 
 <script>
 // ---------------------------------------------------------------------
-// Event data: seven stops along the march, each with an ancient
-// witness and a logistical note. Written in plain English; the quoted
-// passages are paraphrased summaries with citations, not verbatim text.
+// Event data: seven stops along the march
 // ---------------------------------------------------------------------
 const EVENTS = {
   patala: {
@@ -1085,7 +1245,7 @@ const EVENTS = {
 };
 
 // ---------------------------------------------------------------------
-// Panel rendering
+// Panel rendering with fade transition
 // ---------------------------------------------------------------------
 const panelBody = document.getElementById('panelBody');
 const markers = document.querySelectorAll('.mk-hit');
@@ -1095,24 +1255,30 @@ function renderEvent(id) {
   if (!ev) return;
 
   markers.forEach(m => {
-    if (m.getAttribute('data-id') === id) m.classList.add('active');
-    else m.classList.remove('active');
+    const isActive = m.getAttribute('data-id') === id;
+    m.classList.toggle('active', isActive);
+    m.setAttribute('aria-pressed', isActive ? 'true' : 'false');
   });
 
   const statsHtml = ev.stats.map(s =>
     `<div class="stat"><div class="k">${s.k}</div><div class="v">${s.v}<span class="u">${s.u || ''}</span></div></div>`
   ).join('');
 
-  panelBody.innerHTML = `
-    <h2>${ev.title}</h2>
-    <div class="meta">${ev.date}</div>
-    ${ev.body.map(p => `<p>${p}</p>`).join('')}
-    <blockquote>
-      &ldquo;${ev.quote}&rdquo;
-      <cite>${ev.cite}</cite>
-    </blockquote>
-    <div class="stat-row">${statsHtml}</div>
-  `;
+  // Fade out → update → fade in
+  panelBody.classList.add('fading');
+  setTimeout(() => {
+    panelBody.innerHTML = `
+      <h2>${ev.title}</h2>
+      <div class="meta">${ev.date}</div>
+      ${ev.body.map(p => `<p>${p}</p>`).join('')}
+      <blockquote>
+        &ldquo;${ev.quote}&rdquo;
+        <cite>${ev.cite}</cite>
+      </blockquote>
+      <div class="stat-row">${statsHtml}</div>
+    `;
+    panelBody.classList.remove('fading');
+  }, 180);
 }
 
 markers.forEach(m => {
@@ -1155,11 +1321,7 @@ supplyToggle.addEventListener('change', () => {
 });
 
 // ---------------------------------------------------------------------
-// Backdrop toggle: None / Resource
-// The resource backdrop renders fertile zones, rivers, and oases beneath
-// the routes so the student can read the expedition against its
-// resource geography. (Political / satrapy boundaries are shown separately
-// as the historical reference tiles above the interactive map.)
+// Backdrop toggle
 // ---------------------------------------------------------------------
 const backdropSeg = document.getElementById('backdropSeg');
 const resourceBg  = document.getElementById('resourceBackdrop');
@@ -1177,32 +1339,89 @@ backdropSeg.addEventListener('click', (e) => {
 
 // ---------------------------------------------------------------------
 // Army-size slider & logistical math
-// Figures follow Engels (1978): water 9 L/person/day desert; grain 1.4
-// kg/person/day; pack animal ratio ~1:6.5; pack-animal payload ceiling
-// ~5 days before self-consumption exceeds transport.
 // ---------------------------------------------------------------------
-const slider = document.getElementById('armySize');
-const sizeVal = document.getElementById('armySizeVal');
-const waterEl  = document.getElementById('waterVal');
-const grainEl  = document.getElementById('grainVal');
-const animalEl = document.getElementById('animalVal');
-const daysEl   = document.getElementById('daysVal');
+const slider    = document.getElementById('armySize');
+const sizeVal   = document.getElementById('armySizeVal');
+const waterEl   = document.getElementById('waterVal');
+const grainEl   = document.getElementById('grainVal');
+const animalEl  = document.getElementById('animalVal');
+const daysEl    = document.getElementById('daysVal');
 
 function fmt(n) { return n.toLocaleString('en-US'); }
 
 function updateDash() {
   const n = +slider.value;
   sizeVal.textContent = fmt(n);
-  waterEl.textContent = fmt(n * 9);
-  grainEl.textContent = fmt(Math.round(n * 1.4));
+  slider.setAttribute('aria-valuenow', n);
+  slider.setAttribute('aria-valuetext', fmt(n) + ' soldiers');
+  waterEl.textContent  = fmt(n * 9);
+  grainEl.textContent  = fmt(Math.round(n * 1.4));
   animalEl.textContent = '~' + fmt(Math.round(n / 6.5));
-  // Days inland possible = roughly constant ~5 days per Engels; drops
-  // slightly as army grows because forage per animal shrinks.
   const days = Math.max(3, Math.round(6 - (n / 30000)));
   daysEl.textContent = '~' + days;
 }
 slider.addEventListener('input', updateDash);
 updateDash();
+
+// ---------------------------------------------------------------------
+// Tile II: Satellite ↔ Ancient Map toggle
+// ---------------------------------------------------------------------
+const tile2Btns     = document.querySelectorAll('.tile-view-seg button[data-tileview]');
+const satelliteImg  = document.getElementById('satelliteImg');
+const ancientImg    = document.getElementById('ancientImg');
+const tile2Title    = document.getElementById('tile2Title');
+const tile2Tag      = document.getElementById('tile2Tag');
+const tile2Caption  = document.getElementById('tile2Caption');
+const terrainSVG    = document.getElementById('terrainSVG');
+const ancientSVG    = document.getElementById('ancientSVG');
+
+const TILE2_COPY = {
+  satellite: {
+    title: 'Satellite View',
+    tag: 'Pakistani Balochistan \u00b7 Ormara\u2013Gwadar corridor',
+    caption: 'Satellite view of the modern Makran coast. The narrow strip between the coast range and the Arabian Sea is the entire supply corridor \u2014 once the column left it, the fleet could no longer reach them. Toggle to <em>Ancient Map</em> for a historical cartographic view of the same region.'
+  },
+  ancient: {
+    title: 'Ancient Map',
+    tag: 'Historical cartographic view \u00b7 same region',
+    caption: 'Historical map of the Makran / Gedrosia region, showing the same terrain through a pre-modern cartographic lens. Note how the coast range and inland desert are rendered versus the precision of the satellite view above. Toggle back to <em>Satellite</em> to compare directly.'
+  }
+};
+
+function setTileView(view) {
+  const isSat = view === 'satellite';
+
+  // Button states
+  tile2Btns.forEach(b => {
+    b.setAttribute('aria-pressed', b.dataset.tileview === view ? 'true' : 'false');
+  });
+
+  // Image crossfade
+  // We use class toggling for CSS opacity transition
+  if (isSat) {
+    satelliteImg.classList.replace('tile-img-hidden', 'tile-img-active');
+    ancientImg.classList.replace('tile-img-active', 'tile-img-hidden');
+    // Also handle fallback SVGs
+    if (terrainSVG.style.display !== 'none') terrainSVG.style.display = 'block';
+    ancientSVG.style.display = 'none';
+  } else {
+    ancientImg.classList.replace('tile-img-hidden', 'tile-img-active');
+    satelliteImg.classList.replace('tile-img-active', 'tile-img-hidden');
+    if (ancientSVG.style.display !== 'none') ancientSVG.style.display = 'block';
+    terrainSVG.style.display = 'none';
+  }
+
+  // Update header / caption text
+  const copy = TILE2_COPY[view];
+  tile2Title.textContent   = copy.title;
+  tile2Tag.textContent     = copy.tag;
+  tile2Caption.innerHTML   = copy.caption;
+}
+
+document.querySelector('.tile-view-seg').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-tileview]');
+  if (btn) setTileView(btn.dataset.tileview);
+});
 </script>
 </body>
 </html>
